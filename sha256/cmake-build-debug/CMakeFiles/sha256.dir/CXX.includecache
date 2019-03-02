@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/user/Documents/DD2448/sha256/sha256.cpp
+iostream
+-
+iomanip
+-
+fstream
+-
+string
+-
+vector
+-
+sstream
+-
+
