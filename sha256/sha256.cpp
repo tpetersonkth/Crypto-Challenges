@@ -37,38 +37,36 @@ void testInternalFunctions();
 
 int main() {
 
-    testOperations();
-    testInternalFunctions();
-
-    vector<vector<uint32_t>> blocks;
+    //testOperations();
+    //testInternalFunctions();
 
     string str;
-    while (getline(cin, str))
-    {
+    while (getline(cin, str)){
+      //cout << "Received: \'" << str << "\'" << endl;
+      if (str == ""){
+        cout << "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" << "\n";
+      }
+      else{
+        vector<vector<uint32_t>> blocks;
 
         padMessage(str);
-
         getVector(blocks,str);
-    }
 
-#ifdef DEBUG_OUTPUT
-    for (vector<uint32_t> block : blocks) {
-        cout << "---" << endl;
+        //Calculate the hash
+        uint32_t Hash[8];
+        sha256(blocks, K, Hash);
 
-        for (int i = 0; i < 16; i++){
-            cout << block[i] << endl;
+        //Output the hash to stdout
+        for(int i = 0; i < 8; i++){
+          printf("%08x", Hash[i]);
         }
+        cout << "\n";
+      }
     }
-#endif
 
-    uint32_t Hash[8];
-    sha256(blocks, K, Hash);
+    //cout << endl;
 
-    for(int i = 0; i < 8; i++){
-        printf("%08x", Hash[i]);
-    }
-    cout << endl;
-
+    return 0;
 }
 
 bool padMessage(string& str){
@@ -76,14 +74,11 @@ bool padMessage(string& str){
     bool hadToPad = false;
     unsigned long len = str.size()*4;
 
+    str.append("8");
+    appended++;
     while((len+appended*4) % 512 != 448){
-        if (appended == 0){
-            //Add a 1 followed by 0:s
-            str.append("8");
-        }
-        else{
-            str.append("0");
-        }
+        str.append("0");
+
         appended++;
         hadToPad = true;
     }
@@ -114,7 +109,6 @@ void getVector(vector<vector<uint32_t>>& v, string str){
 }
 
 void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
-
     uint32_t H[] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
     for (uint32_t i = 0; i < blocks.size(); i++) {
@@ -153,28 +147,6 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
         for (int t = 0; t < 64; t++) {
             uint32_t T1 = h + capitalSigma1(e) + Ch(e,f,g) + K[t] + W[t];
             uint32_t T2 = capitalSigma0(a) + Maj(a,b,c);
-#ifdef DEBUG_OUTPUT
-            if (t == 0){
-                cout << "h=" << h << endl;
-                cout << "EP1(e)=" << EP1(e) << endl;
-                cout << CH(e,f,g) << endl;
-                cout << K[t] << endl;
-                cout << W[t] << endl;
-                cout << "--------" << endl;
-                cout << "t=" << dec << t << endl << hex;
-                cout << "K[t]=" << K[t] << endl;
-                cout << "T1=" << T1 << endl;
-                cout << "a=" << a << endl;
-                cout << "b=" << b << endl;
-                cout << "c=" << c << endl;
-                cout << "d=" << d << endl;
-                cout << "e=" << e << endl;
-                cout << "f=" << f << endl;
-                cout << "g=" << g << endl;
-                cout << "h=" << h << endl;
-                cout << "--------" << endl;
-            }
-#endif
             h = g;
             g = f;
             f = e;
@@ -183,6 +155,28 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
             c = b;
             b = a;
             a = T1 + T2;
+#ifdef DEBUG_OUTPUT
+          if (t == 0 || t == 1){
+            cout << "h=" << h << endl;
+            cout << "EP1(e)=" << capitalSigma1(e) << endl;
+            cout << Ch(e,f,g) << endl;
+            cout << K[t] << endl;
+            cout << W[t] << endl;
+            cout << "--------" << endl;
+            cout << "t=" << dec << t << endl << hex;
+            cout << "K[t]=" << K[t] << endl;
+            cout << "T1=" << T1 << endl;
+            cout << "a=" << a << endl;
+            cout << "b=" << b << endl;
+            cout << "c=" << c << endl;
+            cout << "d=" << d << endl;
+            cout << "e=" << e << endl;
+            cout << "f=" << f << endl;
+            cout << "g=" << g << endl;
+            cout << "h=" << h << endl;
+            cout << "--------" << endl;
+          }
+#endif
 
         }
 
@@ -201,7 +195,6 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
     for(int i = 0; i < 8; i++){
         hash[i] = H[i];
     }
-
 }
 
 //----Operations-----
