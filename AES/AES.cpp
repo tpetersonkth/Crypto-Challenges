@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <cstring>
 #include <vector>
 
 #include "AES.h"
@@ -22,16 +23,18 @@ void keyExpansion(uint8_t *key, uint32_t *w);
 uint32_t subWord(uint32_t word);
 uint32_t rotWord(uint32_t word);
 
-void addRoundKey(uint8_t key, BLOCK state);
+void addRoundKey(uint32_t *key, uint8_t state[][4]);
 void subBytes(BLOCK block);
 
 void printByte(uint8_t byte);
 void printWord(uint32_t byte);
 void printByteArray(uint8_t *array, int size);
 void printBlock(BLOCK block);
+void printState(uint8_t state[][4]);
 
 int main(){
   uint8_t state[STATE_DIM][STATE_DIM];
+  memset(state, 0, sizeof state);
 
   // Get key
   uint8_t key[16];
@@ -44,11 +47,11 @@ int main(){
 
   //Get blocks
   vector<BLOCK> blocklist;
-
   int row = 0;
   int col = 0;
   BLOCK block;
   uint8_t byte;
+
   while(!cin.eof()){
     byte = cin.get();
     block.set(row,col,byte);
@@ -70,20 +73,28 @@ int main(){
   }
   blocklist.push_back(block);
 
-  /*
+
+  cout << "size:" << blocklist.size() << endl;
+
   //Copy first block to state
-  for(int r; r < STATE_DIM; r++){
-    for(int c; c < STATE_DIM; c++){
+  for(int r = 0; r < STATE_DIM; r++){
+    for(int c = 0; c < STATE_DIM; c++){
       state[r][c] = blocklist[0].get(r,c);
     }
   }
-  */
+
 
   //blocklist.erase(blocklist.begin());
 
   uint32_t keys[Nb*(Nr+1)];
   keyExpansion(key,keys);
 
+  cout << "state" << flush << endl;
+  printState(state);
+
+  addRoundKey(keys,state);
+
+  printState(state);
 
   return 0;
 }
@@ -93,7 +104,6 @@ void keyExpansion(uint8_t *key, uint32_t *w){
   uint32_t temp;
 
   int i = 0;
-
 
   while(i < Nk){
     w[i] = 0;
@@ -138,8 +148,13 @@ uint32_t rotWord(uint32_t word){
 
 //-----State manipulation-----
 
-void addRoundKey(uint8_t key, BLOCK state){
-
+void addRoundKey(uint32_t *key, uint8_t state[][4]){
+  for(int c = 0; c < STATE_DIM; c++){
+    state[0][c] ^= (key[c] & 0xff000000) >> 24;
+    state[1][c] ^= (key[c] & 0xff0000) >> 16;
+    state[2][c] ^= (key[c] & 0xff00) >> 8;
+    state[3][c] ^= (key[c] & 0xff);
+  }
 }
 
 
@@ -171,6 +186,16 @@ void printBlock(BLOCK block){
   for(int r = 0; r < STATE_DIM; r++) {
     for (int c = 0; c < STATE_DIM; c++) {
       cout << hex << setfill('0') << setw(2) << static_cast<unsigned>(block.get(r,c));
+    }
+    cout << endl;
+  }
+  cout << endl;
+}
+
+void printState(uint8_t state[][4]){
+  for(int r = 0; r < STATE_DIM; r++) {
+    for (int c = 0; c < STATE_DIM; c++) {
+      cout << hex << setfill('0') << setw(2) << static_cast<unsigned>(state[r][c]);
     }
     cout << endl;
   }
