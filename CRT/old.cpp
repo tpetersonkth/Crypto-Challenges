@@ -8,7 +8,6 @@
 #include <vector>
 #include <sstream>
 #include <assert.h>
-#include <math.h>
 
 //#include "sha256.h"
 
@@ -59,27 +58,60 @@ int main() {
       Res += y[i]*c[i]*a[i];
     }
 
-    float fRes = float(Res);
-    float fQ = float(Q);
-    if(Res < 0){
-      int factor = ceil(abs(fRes/fQ));
-      //cout << fRes << " " << fQ << " " << fRes/fQ << " " << factor << endl;
-      Res += Q*factor;
+    int r = evaluate(a,q,size);
+    cout << r << endl;
+
+    if(check(size,a,q,r)){
+      cout << "True" << endl;
     }
 
-    if(Res >= Q){
-      int factor = floor(fRes/fQ);
-      //cout << fRes << " " << fQ << " " << fRes/fQ << " " << factor << endl;
-      Res -= Q*factor;
-    }
-
-
-    cout << float(Res) << endl;
-
+    
   }
 
   return 0;
 }
+
+int evaluate(int a[], int b[], int n){
+  int Minv[n];
+  int q, r, r1, r2, t, t1, t2;
+
+  int total = 1;
+  for (int k = 0; k < n; k++)
+    total *= b[k];
+
+  for (int k = 0; k < n; k++)
+  {
+    r1 = b[k];
+    r2 = total / b[k];
+    t1 = 0;
+    t2 = 1;
+
+    while (r2 > 0)
+    {
+      q = r1 / r2;
+      r = r1 - q * r2;
+      r1 = r2;
+      r2 = r;
+
+      t = t1 - q * t2;
+      t1 = t2;
+      t2 = t;
+    }
+
+    if (r1 == 1)
+      Minv[k] = t1;
+
+    if (Minv[k] < 0)
+      Minv[k] = Minv[k] + b[k];
+  }
+
+  int x = 0;
+  for (int k = 0; k < n; k++)
+    x += (a[k] * total * Minv[k]) / b[k];
+
+  return x;
+}
+
 
 bool check(int size, int *a, int*q, int Res){
   bool returnVal = true;
