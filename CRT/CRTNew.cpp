@@ -7,6 +7,7 @@
 #include <sstream>
 #include <assert.h>
 
+long inv(long a, long m);
 bool check(long size, long *a, long*q, long Res);
 long gcd(long a, long b);
 bool possible(long nArr[], long size);
@@ -19,12 +20,27 @@ int main() {
   while (cin >> size) {
     long q[size];
     long a[size];
+    //cout << "size:" << size << endl;
     for(long i = 0; i < size; i++){
       cin >> q[i];
     }
     for(long i = 0; i < size; i++){
       cin >> a[i];
     }
+
+    cin.ignore(1000,'\n');
+
+    /*
+    //Ensure input a is 0 < a < q[i]
+    for(long i = 0; i < size; i++){
+      while(a[i] < 0){
+        a[i] += q[i];
+      }
+      while(a[i] >= q[i]){
+        a[i] -= q[i];
+      }
+    }
+    */
 
     long r = CRT(a,q,size);
     cout << r << endl;
@@ -107,6 +123,7 @@ long CRT(long aArr[], long nArr[], long n){
     N *= nArr[k];
 
   //Find inverse
+  /*
   for (long k = 0; k < n; k++){
     prevR = nArr[k];
     newR = N / nArr[k];
@@ -135,10 +152,25 @@ long CRT(long aArr[], long nArr[], long n){
     if (sArr[k] < 0)
       sArr[k] = sArr[k] + nArr[k];
   }
+  */
 
   long x = 0;
-  for (long k = 0; k < n; k++)
-    x += sArr[k] * (N / nArr[k]) * aArr[k];
+  for (long k = 0; k < n; k++) {
+
+    //Sanity check
+    int c = inv(N / nArr[k], nArr[k]) * (N / nArr[k]);
+    for (long i = 0; i < n; i++){
+      if (i != k){
+        while(c%nArr[i] != 0){
+          cout << "Sanity check failed" << endl;
+        }
+      }
+    }
+
+    x += inv(N / nArr[k], nArr[k]) * (N / nArr[k]) * aArr[k];
+    //x += sArr[k] * (N / nArr[k]) * aArr[k];
+  }
+
 
   //Ensure that the answer is in the range 0 to N-1
   while(x >= N){x -= N;}
