@@ -31,6 +31,7 @@ void subBytes(uint8_t state[][4]);
 void shiftRows(uint8_t state[STATE_DIM][STATE_DIM]);
 void mixColumns(uint8_t state[STATE_DIM][STATE_DIM]);
 
+void outputAnswer(uint8_t *out, int size);
 void printByte(uint8_t byte);
 void printWord(uint32_t byte);
 void printByteArray(uint8_t *array, int size);
@@ -45,8 +46,8 @@ int main(){
     key[i] = cin.get();
   }
 
-  cout << "key: ";
-  printByteArray(key,16);
+  //cout << "key: ";
+  //printByteArray(key,16);
 
   //Get blocks
   vector<BLOCK> blocklist;
@@ -55,20 +56,14 @@ int main(){
   BLOCK block;
   uint8_t byte;
 
-  cout << "empty block" << endl;
-  printBlock(block);
+  cin.unsetf(ios_base::skipws);
+  while(cin >> byte){
 
-  while(!cin.eof()){
-    byte = cin.get();
-
-    printWord(byte);
-    cout << endl;
-
-    block.set(row,col,(uint8_t)byte);
+    block.set(row,col,byte);
 
     if (col == 3 && row == 3){
       blocklist.push_back(block);
-      printBlock(block);
+      //printBlock(block);
       block = *(new BLOCK);
     }
 
@@ -81,23 +76,18 @@ int main(){
       }
     }
   }
-  cout << "pushing empty block" << endl;
-  printBlock(block);
-  blocklist.push_back(block);
-
   uint32_t keys[Nb*(Nr+1)];
   keyExpansion(key,keys);
 
 
-  cout << "Starting encryption" << endl;
+  //cout << "Starting encryption" << endl;
   for(int b = 0; b < blocklist.size(); b++){
     uint8_t out[4*Nb];
     cipher(blocklist[b], out, keys);
-    printBlock(blocklist[b]);
-    printByteArray(out,4*Nb);
+    //printBlock(blocklist[b]);
+    //printByteArray(out,4*Nb);
+    outputAnswer(out, 4*Nb);
   }
-
-
 
   //blocklist.erase(blocklist.begin());
 
@@ -254,7 +244,14 @@ void mixColumns(uint8_t state[STATE_DIM][STATE_DIM]){
   }
 }
 
-//-----Debug-----
+//-----I/O-----
+
+void outputAnswer(uint8_t *out, int size){
+  for(int i = 0; i < size; i++){
+    cout << out[i];
+  }
+}
+
 void printByte(uint8_t byte){
   cout << hex << setfill('0') << setw(2) << uppercase << static_cast<unsigned>(byte);
 }
