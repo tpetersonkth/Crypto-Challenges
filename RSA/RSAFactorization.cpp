@@ -71,7 +71,7 @@ void recoverPrimeFactors(mpz_class n, mpz_class e, mpz_class d, mpz_class *pout,
 
   //cout << "n is " << n << endl;
   //cout << n <<" < RAND_MAX: " << RAND_MAX << endl;
-  for(int i = 1; i < 20; i++){
+  for(int i = 1; i < 100; i++){
     bool goToNext = false;
 
     mpz_class g = rand()%n;
