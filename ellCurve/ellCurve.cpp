@@ -11,6 +11,7 @@
 
 using namespace std;
 
+//mpz_class inv(mpz_class num);
 struct point applyOp(struct point P1, struct point P2);
 
 //Elliptic curve parameters
@@ -21,11 +22,8 @@ mpz_class Gx("7d29778100c65a1da1783716588dce2b8b4aee8e228f1896",16);
 mpz_class Gy("38a90f22637337334b49dcb66a6dc8f9978aca7648a943b0",16);
 mpz_class q("ffffffffffffffffffffffff7a62d031c83f4294f640ec13",16);
 
-
-
 int main(){
   string temp;
-
 
   while(cin >> hex >> temp){
 
@@ -34,53 +32,90 @@ int main(){
 
     //Tests
     struct point R = applyOp(*(new struct point(17,10)), *(new struct point(95,31)));
-    cout << "R -> " << R.x << ":" << R.y << endl;
+    cout << "R -> " << dec << R.x << ":" << R.y << endl;
   }
 
 }
 
-//Applies the group operation for the elliptic curve group
-//See appendix F1 of https://tools.ietf.org/html/rfc6090
 struct point applyOp(struct point P1, struct point P2){
   struct point R;
   mpz_class x3,y3;
 
-  P1.print();
-  P2.print();
-
-
-  if (P1.idEl){
-    R.set(P2.x,P2.y);
-  }
-  else if (P2.idEl){
-    R.set(P1.x,P2.y);
-  }
-  else if(P1.y != P2.y && P1.x == P2.x){
+  //Corner cases
+  if (P2.x == P1.x && P2.y == -P1.y){
     R.setToIdEl();
+    return R;
   }
-  else if(P1.y != P2.y && P1.x != P2.x){
-    mpz_class temp = (P2.y-P1.y);
-    mpz_class temp2 = (P2.x-P1.x);
-    //mpz_class temp = ((P2.y-P1.y)/(P2.x-P1.x))^2;
-    cout << "temp: " << temp << ":" << temp2 << endl;
-    x3 = temp - P1.x - P2.x % P;
-    y3 = (P1.x-x3)*(P2.y-P1.y)/(P2.x-P1.x) - P1.y % P;
-    R.set(x3,y3);
+  else if(P1.idEl){
+    return P2;
   }
-  else if (P1.x == P2.x && P1.y == P2.y && P1.y == 0){
-    R.setToIdEl();
+  else if(P2.idEl){
+    return P1;
+  }
+
+  //Calculate lambda
+  mpz_class lambda;
+  if(P1.x == P2.x && P1.y == P2.y){//If P1 == P2
+
+    //lambda = (3(x1)² + a)(2y1)^-1
+    mpz_class exp = 2;
+    mpz_class temp;
+    mpz_powm(temp.get_mpz_t(), P1.x.get_mpz_t(), exp.get_mpz_t(),P.get_mpz_t());
+
+    lambda = 3*temp + A % P;
+
+    mpz_class invVal;
+    mpz_class val = 2*P1.y;
+    mpz_invert(invVal.get_mpz_t(), val.get_mpz_t(), P.get_mpz_t());
+
+    lambda = lambda * invVal;
   }
   else{
-    x3 = ((3*P1.x^2 + A)/(2*P1.y))^2 - 2*P1.x % P;
-    y3 = (P1.x-x3)*(3*P1.x^2 + A)/(2*P1.y) - P1.y % P;
-    R.set(x3,y3);
+
+    //lambda = (y2 - y1)(x2 - x1)^-1
+    mpz_class invVal;
+    mpz_class val = P2.x - P1.x;
+    mpz_invert(invVal.get_mpz_t(), val.get_mpz_t(), P.get_mpz_t());
+    lambda = (P2.y-P1.y) * invVal;
+
+    cout << "lambda=" << lambda << endl;
+    cout << "prod:" << val*invVal % P << endl;
+
   }
+
+  //Calculate the point
+  mpz_class exp = 2;
+  mpz_class temp;
+  mpz_powm(temp.get_mpz_t(), lambda.get_mpz_t(), exp.get_mpz_t(), P.get_mpz_t());
+  x3 = temp - P1.x - P2.x % P;
+  lambda %= P;
+  y3 = (lambda*(P1.x-x3)-P1.y) % P;
+
+  // Make sure that y3 is in the range 0 to P-1
+  if(y3 < 0){
+    y3 += P;
+  }
+  R.set(x3,y3);
 
   return R;
 
 }
 
 //https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Double-and-add
-struct point applyOpMul(struct point P1, struct point P2){
+struct point applyOpMul(mpz_class c, struct point P){
+  struct point N = P;
+  struct point Q = *(new struct point(0,0));
+  Q.setToIdEl();
 
+  while(c > 0){
+    if ((c&1) == 1){
+      Q = applyOp(Q,N);
+    }
+    N = applyOp(N,N);
+    c = c >> 1;
+  }
+
+  return Q;
 }
+
+
