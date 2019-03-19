@@ -33,7 +33,7 @@ struct point {
     }
 
     void print(){
-      std::cout << std::dec << x << ":" << y << std::endl;
+      std::cout << std::hex << x << ":" << y << std::endl;
     }
 
 };

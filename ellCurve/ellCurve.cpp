@@ -13,6 +13,7 @@ using namespace std;
 
 //mpz_class inv(mpz_class num);
 struct point applyOp(struct point P1, struct point P2);
+struct point applyOpMul(mpz_class c, struct point P);
 
 //Elliptic curve parameters
 mpz_class P("fffffffffffffffffffffffffffffffeffffffffffffffff",16);
@@ -26,13 +27,15 @@ int main(){
   string temp;
 
   while(cin >> hex >> temp){
-
-    cout << hex << P << endl;
-    cout << hex << B << endl;
+    temp = temp.substr(2);
+    //cout << "loaded:" << temp << endl;
+    mpz_class c(temp,16);
+    //cout << hex << c << endl;
 
     //Tests
-    struct point R = applyOp(*(new struct point(17,10)), *(new struct point(95,31)));
-    cout << "R -> " << dec << R.x << ":" << R.y << endl;
+    struct point g = *(new struct point(Gx,Gy));
+    struct point res = applyOpMul(c,g);
+    cout << "0x" << hex << res.x << " 0x" << res.y << endl;
   }
 
 }
@@ -78,9 +81,6 @@ struct point applyOp(struct point P1, struct point P2){
     mpz_invert(invVal.get_mpz_t(), val.get_mpz_t(), P.get_mpz_t());
     lambda = (P2.y-P1.y) * invVal;
 
-    cout << "lambda=" << lambda << endl;
-    cout << "prod:" << val*invVal % P << endl;
-
   }
 
   //Calculate the point
@@ -91,7 +91,10 @@ struct point applyOp(struct point P1, struct point P2){
   lambda %= P;
   y3 = (lambda*(P1.x-x3)-P1.y) % P;
 
-  // Make sure that y3 is in the range 0 to P-1
+  // Make sure that x3 and y3 are in the range 0 to P-1
+  if(x3 < 0){
+    x3 += P;
+  }
   if(y3 < 0){
     y3 += P;
   }
