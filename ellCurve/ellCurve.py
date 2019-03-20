@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 # Elliptic curve arithmetics
 # Author: Thomas Peterson
 
 import sys
 
+#Elliptic curve parameters
 P =  0xfffffffffffffffffffffffffffffffeffffffffffffffff
 A =  0xfffffffffffffffffffffffffffffffefffffffffffffffc
 B =  0x22123dc2395a05caa7423daeccc94760a7d462256bd56916
@@ -10,15 +12,22 @@ Gx = 0x7d29778100c65a1da1783716588dce2b8b4aee8e228f1896
 Gy = 0x38a90f22637337334b49dcb66a6dc8f9978aca7648a943b0
 Q = 0xffffffffffffffffffffffff7a62d031c83f4294f640ec13
 
+#Class for holding a point
 class Point():
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-g = Point(Gx,Gy)
-ID = -1#Identity element of the elliptic group
+#Global variables
+g = Point(Gx,Gy) #Generator point
+ID = -1 #Identity element of the elliptic group
 
 #Taken from https://stackoverflow.com/questions/4798654/modular-multiplicative-inverse-function-in-python
+#Extended ecludian algorithm - calculates the coefficients of Bézout's identity
+#Params:
+#   a - The first number
+#   b - The second number
+#Returns: (g, x, y) such that a*x + b*y = g = gcd(a, b)
 def egcd(a, b):
     if a == 0:
         return (b, 0, 1)
@@ -27,6 +36,11 @@ def egcd(a, b):
         return (g, x - (b // a) * y, y)
 
 #Taken from https://stackoverflow.com/questions/4798654/modular-multiplicative-inverse-function-in-python
+#Calculates and returns the modular inverse of a modulus m
+#Params:
+#   a - Number to find inverse for
+#   m - Modulus
+#Returns: Inverse of a in modulus m
 def modinv(a, m):
     a = a % m
     g, x, y = egcd(a, m)
@@ -35,7 +49,12 @@ def modinv(a, m):
     else:
         return x % m
 
-def applyOp(P1, P2):
+#Applies elliptic curve point addition on two points
+#Params:
+#   P1 - The first point
+#   P2 - The second point
+#Returns: P1 + P2
+def add(P1, P2):
   x3 = 0
   y3 = 0
 
@@ -71,26 +90,28 @@ def applyOp(P1, P2):
   return Point(x3,y3)
 
 
-
-#https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Double-and-add
-def applyOpMul(c, P):
+#Applies elliptic curve point multiplication using the double-and-add algorithm
+#Params:
+#   f - A factor
+#   P - A point
+#Returns: fP
+#More info: https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Double-and-add
+def multiply(f, P):
   N = P
   Q = ID
 
-  while(c > 0):
-    if ((c&1) == 1):
-      Q = applyOp(Q,N)
+  while(f > 0):
+    if ((f&1) == 1):
+      Q = add(Q,N)
     
-    N = applyOp(N,N)
-    c = c >> 1
-  
+    N = add(N,N)
+    f = f >> 1
 
   return Q
-
 
 
 if __name__=="__main__":
     for i in sys.stdin:
         num = int(i, 0)
-        ans = applyOpMul(num,g)
+        ans = multiply(num,g)
         print(str(hex(ans.x)) + " " + str(hex(ans.y)))
