@@ -1,6 +1,8 @@
 // Calculation of elliptic points
 // Author: Thomas Peterson
 
+//The term "Crypto book" referes to cryptography theory and practice third edition by Douglas R Stinson
+
 #include <iostream> /* cin and cout */
 #include <gmpxx.h> /* mpz_class */
 
@@ -21,6 +23,15 @@ int main(){
   }
 }
 
+/*
+ * Checks if an elliptic curve is singular using its determinant
+ * Params:
+ *  a - Elliptic curve parameter a
+ *  b - Elliptic curve parameter b
+ *  p - Modulus
+ * Returns: True if the elliptic curve is singular, False if not
+ * More info: crypto book page 255
+*/
 int isSingular(mpz_class a, mpz_class b, mpz_class p){
   //Calculate 4*a^3 + 27*b^2 and check if equal to 0
   mpz_class exp1 = 3;
@@ -34,8 +45,14 @@ int isSingular(mpz_class a, mpz_class b, mpz_class p){
 
 }
 
+/*
+ * Uses euclidean criterion to calculate if z is a quadratic residue modulo p or not
+ * Params:
+ *  z - integer to determine if quadric residue or not
+ *  p - Modulus
+ * Returns: True if z is a quadratic residue modulo p
+ */
 bool isQuadResidue(mpz_class z, mpz_class p){
-  //Uses euclidean criterion
   //z^(p-1)/2 mod p
   mpz_class temp;
   mpz_class exp = (p-1)/2;
@@ -44,7 +61,16 @@ bool isQuadResidue(mpz_class z, mpz_class p){
   return temp == 1;
 }
 
-//https://en.wikipedia.org/wiki/Counting_points_on_elliptic_curves
+
+/*
+ * Returns the number of affine points of an elliptic curve
+ * Params:
+ *  a - Elliptic curve parameter a
+ *  b - Elliptic curve parameter b
+ *  p - Modulus
+ * Returns: Number of affine points of the elliptic curve specified by a,b and p
+ * More info: More info: https://en.wikipedia.org/wiki/Counting_points_on_elliptic_curves
+ */
 mpz_class getNumPoints(mpz_class a, mpz_class b, mpz_class p){
   mpz_class points = 0;
 
