@@ -23,6 +23,15 @@ int main(){
 
 }
 
+/*
+ * Calculates b^e mod m
+ * Params:
+ *  b - Base
+ *  e - exponent
+ *  m - Modulo
+ * Returns: b^e mod m
+ * See https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+ */
 mpz_class binExpNoRec(mpz_class b, mpz_class e, mpz_class m){
 
   mpz_class r = 1;
