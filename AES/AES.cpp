@@ -3,6 +3,13 @@
  * Author: Thomas Peterson
  */
 
+// Good references:
+// http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf
+// https://en.wikipedia.org/wiki/Rijndael_S-box
+// https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
+// https://en.wikipedia.org/wiki/Rijndael_key_schedule
+//Testing: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf
+
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -10,13 +17,6 @@
 #include <vector>
 
 #include "AES.h"
-
-// Good references:
-// http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf
-// https://en.wikipedia.org/wiki/Rijndael_S-box
-// https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
-// https://en.wikipedia.org/wiki/Rijndael_key_schedule
-//Testing: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf
 
 using namespace std;
 
@@ -40,14 +40,11 @@ void printState(uint8_t state[][4]);
 
 int main(){
 
-  // Get key
+  //Get key
   uint8_t key[16];
   for(int i = 0; i < 16; i++){
     key[i] = cin.get();
   }
-
-  //cout << "key: ";
-  //printByteArray(key,16);
 
   //Get blocks
   vector<BLOCK> blocklist;
@@ -63,7 +60,6 @@ int main(){
 
     if (col == 3 && row == 3){
       blocklist.push_back(block);
-      //printBlock(block);
       block = *(new BLOCK);
     }
 
@@ -79,21 +75,24 @@ int main(){
   uint32_t keys[Nb*(Nr+1)];
   keyExpansion(key,keys);
 
-
-  //cout << "Starting encryption" << endl;
   for(int b = 0; b < blocklist.size(); b++){
     uint8_t out[4*Nb];
     cipher(blocklist[b], out, keys);
-    //printBlock(blocklist[b]);
-    //printByteArray(out,4*Nb);
     outputAnswer(out, 4*Nb);
   }
-
-  //blocklist.erase(blocklist.begin());
 
   return 0;
 }
 
+//-----Encryption functions-----
+
+/*
+ * encrypts a block of data using a set of round keys
+ * Params:
+ *  in - The block to encrypt
+ *  out - The output location for the encrypted block
+ *  word - A set of round keys used for encryption
+ */
 void cipher(BLOCK in, uint8_t out[4*Nb], uint32_t word[Nb*(Nr+1)]){
   uint8_t state[STATE_DIM][STATE_DIM];
   memset(state, 0, sizeof state);
@@ -152,7 +151,14 @@ void cipher(BLOCK in, uint8_t out[4*Nb], uint32_t word[Nb*(Nr+1)]){
 
 }
 
-//-----Key schedule-----
+//-----Key schedule functions-----
+
+/*
+ * Expands a key into Nr+1 round keys
+ * Params:
+ *  key - The key to expand
+ *  w - the output location of the round keys
+ */
 void keyExpansion(uint8_t *key, uint32_t *w){
   uint32_t temp;
 
@@ -184,6 +190,12 @@ void keyExpansion(uint8_t *key, uint32_t *w){
 
 }
 
+/*
+ * Substitutes the bytes in a word using the AES sbox
+ * Params:
+ *  word - The word to apply the AES sbox to
+ * Returns: The word with the AES sbox applied to each byte
+ */
 uint32_t subWord(uint32_t word){
   uint32_t temp = 0;
   for(int i = 0; i < STATE_DIM; i++){
@@ -194,12 +206,24 @@ uint32_t subWord(uint32_t word){
   return temp;
 }
 
+/*
+ * Rotates a word by one byte to the left
+ * Params:
+ *  word - The word to rotate
+ * Returns: The rotated word
+ */
 uint32_t rotWord(uint32_t word){
   return word << 8 | word >> 24;
 }
 
 
-//-----State manipulation-----
+//-----State manipulation functions-----
+/*
+ * Adds a round key to the state
+ * Params:
+ *  key - The round key to add
+ *  state - The state to manipulate
+ */
 void addRoundKey(uint32_t *key, uint8_t state[][4]){
   for(int c = 0; c < STATE_DIM; c++){
     state[0][c] ^= (key[c] & 0xff000000) >> 24;
@@ -209,6 +233,11 @@ void addRoundKey(uint32_t *key, uint8_t state[][4]){
   }
 }
 
+/*
+ * Applies the AES sbox to each byte in the state
+ * Params:
+ *  state - The state to manipulate
+ */
 void subBytes(uint8_t state[STATE_DIM][STATE_DIM]){
   for(int r = 0; r < STATE_DIM; r++){
     for(int c = 0; c < STATE_DIM; c++){
@@ -217,6 +246,11 @@ void subBytes(uint8_t state[STATE_DIM][STATE_DIM]){
   }
 }
 
+/*
+ * Shifts the rows of the state according to the AES specifications
+ * Params:
+ *  state - The state to manipulate
+ */
 void shiftRows(uint8_t state[STATE_DIM][STATE_DIM]){
   for(int r = 0; r < STATE_DIM; r++){
     uint8_t temp[STATE_DIM];
@@ -230,6 +264,11 @@ void shiftRows(uint8_t state[STATE_DIM][STATE_DIM]){
   }
 }
 
+/*
+ * Mixes the columns of the state according to the AES specifications
+ * Params:
+ *  state - The state to manipulate
+ */
 void mixColumns(uint8_t state[STATE_DIM][STATE_DIM]){
   for(int c = 0; c < STATE_DIM; c++){
     uint8_t temp[STATE_DIM];
@@ -244,22 +283,43 @@ void mixColumns(uint8_t state[STATE_DIM][STATE_DIM]){
   }
 }
 
-//-----I/O-----
-
+//-----I/O functions-----
+/*
+ * Outputs an int array to stdout
+ * Params:
+ *  out - The array to output
+ *  size - The size of the array
+ */
 void outputAnswer(uint8_t *out, int size){
   for(int i = 0; i < size; i++){
     cout << out[i];
   }
 }
 
+/*
+ * Prints a byte to stdout in hex format
+ * Params:
+ *  byte - The byte to print to stdout
+ */
 void printByte(uint8_t byte){
   cout << hex << setfill('0') << setw(2) << uppercase << static_cast<unsigned>(byte);
 }
 
+/*
+ * Prints a word to stdout in hex format
+ * Params:
+ *  word - The word to print to stdout
+ */
 void printWord(uint32_t word){
   cout << hex << setfill('0') << setw(8) << uppercase << static_cast<unsigned>(word) << endl;
 }
 
+/*
+ * Prints a byte array to stdout in hex format
+ * Params:
+ *  array - The byte array to print to stdout
+ *  size - The size of the byte array
+ */
 void printByteArray(uint8_t *array, int size){
   for(int i = 0; i < size; i++){
     cout << hex << setfill('0') << setw(2) << uppercase << static_cast<unsigned>(array[i]);
@@ -267,6 +327,11 @@ void printByteArray(uint8_t *array, int size){
   cout << endl;
 }
 
+/*
+ * Prints a block to stdout in hex format
+ * Params:
+ *  block - The block to print to stdout
+ */
 void printBlock(BLOCK block){
   for(int r = 0; r < STATE_DIM; r++) {
     for (int c = 0; c < STATE_DIM; c++) {
@@ -277,6 +342,11 @@ void printBlock(BLOCK block){
   cout << endl;
 }
 
+/*
+ * Prints a state to stdout in hex format
+ * Params:
+ *  state - The state to print to stdout
+ */
 void printState(uint8_t state[][4]){
   for(int r = 0; r < STATE_DIM; r++) {
     for (int c = 0; c < STATE_DIM; c++) {
