@@ -1,117 +1,120 @@
-//CRT solver
-//Author: Thomas Peterson
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string>
-#include <vector>
+#include <gmpxx.h>
 #include <sstream>
 #include <assert.h>
-#include <math.h>
 
-//#include "sha256.h"
-
-int gcdExtended(int a, int b, int *x, int *y);
-bool check(int size, int *a, int*q, int Res);
-int evaluate(int a[], int b[], int n);
+mpz_class inv(mpz_class a, mpz_class m);
+bool check(mpz_class size, mpz_class *a, mpz_class*q, mpz_class Res);
+mpz_class gcd(mpz_class a, mpz_class b);
+bool possible(mpz_class nArr[], mpz_class size);
+mpz_class CRT(mpz_class a[], mpz_class q[], mpz_class n);
 
 using namespace std;
 
 int main() {
-
-  int size;
+  mpz_class size;
   while (cin >> size) {
-    int q[size];
-    int a[size];
+    mpz_class q[size.get_ui()];
+    mpz_class a[size.get_ui()];
 
-    //Read input
     for(int i = 0; i < size; i++){
       cin >> q[i];
     }
-
     for(int i = 0; i < size; i++){
       cin >> a[i];
     }
 
-    int Q = 1;
-    for(int i = 0; i < size; i++){
-      Q *= q[i];
-    }
-    //cout << "Q=" << Q << endl;
-
-    //Calculate equation coefficients c
-    int c[size];
-    for(int i = 0; i < size; i++){
-      c[i] = Q/q[i];
-      //cout << "c" << c[i] << endl;
-    }
-
-    int y[size];
-    for(int i = 0; i < size; i++){
-      int dummy;
-      gcdExtended(q[i], c[i], &dummy, &y[i]);
-      //cout << "Y" << i << "->" << dummy << "," << y[i] << endl;
-    }
-
-    int Res = 0;
-    for(int i = 0; i < size; i++){
-      Res += y[i]*c[i]*a[i];
-    }
-
-    float fRes = float(Res);
-    float fQ = float(Q);
-    if(Res < 0){
-      int factor = ceil(abs(fRes/fQ));
-      //cout << fRes << " " << fQ << " " << fRes/fQ << " " << factor << endl;
-      Res += Q*factor;
-    }
-
-    if(Res >= Q){
-      int factor = floor(fRes/fQ);
-      //cout << fRes << " " << fQ << " " << fRes/fQ << " " << factor << endl;
-      Res -= Q*factor;
-    }
-
-
-    cout << float(Res) << endl;
+    mpz_class r = CRT(a,q,size);
+    cout << r << endl;
 
   }
 
   return 0;
 }
 
-bool check(int size, int *a, int*q, int Res){
-  bool returnVal = true;
-
-  for(int i = 0; i < size; i++) {
-     if (a[i]%q[i] != Res%q[i]){
-       returnVal = false;
-     }
-  }
-
-  return returnVal;
+/*
+ * Calculates the greatest common divisor of a and b using the euclidean algorithm
+ * Params:
+ *  a - The first number
+ *  b - The second number
+ * Returns: The greatest common divisor of a and b
+ */
+mpz_class gcd(mpz_class a, mpz_class b){
+  if (a == 0)
+    return b;
+  return gcd(b % a, a);
 }
 
-//Fetched from https://www.geeksforgeeks.org/euclidean-algorithms-basic-and-extended/
-// C function for extended Euclidean Algorithm
-int gcdExtended(int a, int b, int *x, int *y)
-{
-  // Base Case
-  if (a == 0)
+/* Calculates the multiplicative inverse of a number a modulo m
+ * Params:
+ *  a - The number
+ *  m - The modulo
+ * Returns: The multiplicative inverse of a modulo m
+ * Taken from https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/
+ */
+mpz_class inv(mpz_class a, mpz_class m){
+  mpz_class m0 = m, t, q;
+  mpz_class x0 = 0, x1 = 1;
+
+  if (m == 1)
+    return 0;
+
+  // Apply extended Euclid Algorithm
+  while (a > 1)
   {
-    *x = 0;
-    *y = 1;
-    return b;
+    // q is quotient
+    q = a / m;
+
+    t = m;
+
+    // m is remainder now, process same as
+    // euclid's algo
+    m = a % m, a = t;
+
+    t = x0;
+
+    x0 = x1 - q * x0;
+
+    x1 = t;
   }
 
-  int x1, y1; // To store results of recursive call
-  int gcd = gcdExtended(b%a, a, &x1, &y1);
+  // Make x1 positive
+  if (x1 < 0)
+    x1 += m0;
 
-  // Update x and y using results of recursive
-  // call
-  *x = y1 - (b/a) * x1;
-  *y = x1;
+  return x1;
+}
 
-  return gcd;
+/*
+ * Calculates the answer variable x to a set of modular equations on the form x = ai mod ni, using the chinese remainder theorem
+ * Params:
+ *  aArr - The array containing the values of each ai
+ *  nArr - The array containing the values of each ni
+ *  n - The number of equations to satisify (= len of nArr and aArr)
+ * Returns: The variable x that fulfills all the equations
+ */
+mpz_class CRT(mpz_class aArr[], mpz_class nArr[], mpz_class n){
+  mpz_class sArr[n.get_ui()];
+  mpz_class quotient, r, prevR, newR, s, prevS, newS;
+
+  //Calculate N = n1*n2*n3*n4..ni
+  mpz_class N = 1;
+  for (int k = 0; k < n; k++)
+    N *= nArr[k];
+
+  //Calculate x
+  mpz_class x = 0;
+  for (int k = 0; k < n; k++) {
+    x += inv(N / nArr[k], nArr[k]) * (N / nArr[k]) * aArr[k];
+  }
+
+  //Ensure that the answer is in the range 0 to N-1
+  while(x >= N){x -= N;}
+  while(x < 0){x += N;}
+
+  return x;
 }
