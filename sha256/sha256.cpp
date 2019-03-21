@@ -1,6 +1,6 @@
 //SHA-256 implementation
 //Author: Thomas Peterson
-//For more info, see https://ws680.nist.gov/publication/get_pdf.cfm?pub_id=910977
+//This implementation follows the NIST Specification: https://ws680.nist.gov/publication/get_pdf.cfm?pub_id=910977
 //For operation precedence, see https://en.cppreference.com/w/cpp/language/operator_precedence
 //For testing, see: http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA256.pdf
 
@@ -18,7 +18,7 @@ using namespace std;
 
 bool padMessage(string& str);
 void getVector(vector<vector<uint32_t>>& v,string str);
-void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash);
+void sha256(vector<vector<uint32_t>> blocks, uint32_t* hash);
 
 uint32_t ROTR(uint32_t x, uint8_t n);
 uint32_t ROTL(uint32_t x, uint8_t n);
@@ -37,13 +37,10 @@ void testInternalFunctions();
 
 int main() {
 
-    //testOperations();
-    //testInternalFunctions();
-
     string str;
     while (getline(cin, str)){
-      //cout << "Received: \'" << str << "\'" << endl;
-      if (str == ""){
+
+      if (str == ""){//Special case
         cout << "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" << "\n";
       }
       else{
@@ -54,7 +51,7 @@ int main() {
 
         //Calculate the hash
         uint32_t Hash[8];
-        sha256(blocks, K, Hash);
+        sha256(blocks, Hash);
 
         //Output the hash to stdout
         for(int i = 0; i < 8; i++){
@@ -69,6 +66,12 @@ int main() {
     return 0;
 }
 
+/*
+ * Pads a message according to the NIST Specification
+ * Params:
+ *  str - The message in its unpadded hexstring form
+ * Returns: Padded message in hexstring format
+ */
 bool padMessage(string& str){
     int appended = 0;
     bool hadToPad = false;
@@ -93,6 +96,13 @@ bool padMessage(string& str){
     return hadToPad;
 }
 
+
+/*
+ * Converts a hexstring to its corresponding binary format stored in a vector of 512 bit blocks
+ * Params:
+ *  v - The output vector for the binary blocks
+ *  str - The hexstring with the data that is to be stored in the blocks
+*/
 //Returns a hexstring as a vector of 512-bit blocks
 void getVector(vector<vector<uint32_t>>& v, string str){
     unsigned long len = str.length()/(128);
@@ -108,7 +118,13 @@ void getVector(vector<vector<uint32_t>>& v, string str){
     }
 }
 
-void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
+/*
+ * Calculates the sha256 hash of a message according to the NIST Specification
+ * Params:
+ *  blocks - The padded input message
+ *  hash - The output location for the hash
+*/
+void sha256(vector<vector<uint32_t>> blocks, uint32_t* hash){
     uint32_t H[] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
     for (uint32_t i = 0; i < blocks.size(); i++) {
@@ -124,15 +140,6 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
             }
         }
 
-#ifdef DEBUG_OUTPUT
-        cout << "--------" << endl;
-        for (int t = 0; t < 64; t++) {
-            cout << "W" << dec <<  t << ": ";
-            cout << hex << W[t] << endl;
-        }
-        cout << "--------" << endl;
-#endif
-
         //Set variables for the calculations
         uint32_t a = H[0];
         uint32_t b = H[1];
@@ -143,7 +150,7 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
         uint32_t g = H[6];
         uint32_t h = H[7];
 
-        //Calculate new values for the 8 previous variables
+        //Calculate new values for the 8 variables above
         for (int t = 0; t < 64; t++) {
             uint32_t T1 = h + capitalSigma1(e) + Ch(e,f,g) + K[t] + W[t];
             uint32_t T2 = capitalSigma0(a) + Maj(a,b,c);
@@ -155,31 +162,9 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
             c = b;
             b = a;
             a = T1 + T2;
-#ifdef DEBUG_OUTPUT
-          if (t == 0 || t == 1){
-            cout << "h=" << h << endl;
-            cout << "EP1(e)=" << capitalSigma1(e) << endl;
-            cout << Ch(e,f,g) << endl;
-            cout << K[t] << endl;
-            cout << W[t] << endl;
-            cout << "--------" << endl;
-            cout << "t=" << dec << t << endl << hex;
-            cout << "K[t]=" << K[t] << endl;
-            cout << "T1=" << T1 << endl;
-            cout << "a=" << a << endl;
-            cout << "b=" << b << endl;
-            cout << "c=" << c << endl;
-            cout << "d=" << d << endl;
-            cout << "e=" << e << endl;
-            cout << "f=" << f << endl;
-            cout << "g=" << g << endl;
-            cout << "h=" << h << endl;
-            cout << "--------" << endl;
-          }
-#endif
-
         }
 
+        //Recalculate the H array
         H[0] = a + H[0];
         H[1] = b + H[1];
         H[2] = c + H[2];
@@ -197,7 +182,8 @@ void sha256(vector<vector<uint32_t>> blocks, uint32_t* K, uint32_t* hash){
     }
 }
 
-//----Operations-----
+//----Internal Operations-----
+//All of these are specified in the NIST Specification. See the specification for more details.
 
 //Implements the circular right shift
 uint32_t ROTR(uint32_t x, uint8_t n){
@@ -219,7 +205,6 @@ uint32_t addModulo32bit(uint32_t x, uint32_t y){
     return x+y;
 }
 
-//----Internal Functions-----
 uint32_t Ch(uint32_t x, uint32_t y, uint32_t z){
     return x & y ^ ~x & z;
 }
@@ -239,6 +224,7 @@ uint32_t capitalSigma1(uint32_t x){
 uint32_t  minusculeSignma0(uint32_t x){
     return ROTR(x,7) ^ ROTR(x,18) ^ SHR(x,3);
 }
+
 
 uint32_t  minusculeSignma1(uint32_t x){
     return ROTR(x,17) ^ ROTR(x,19) ^ SHR(x,10);
