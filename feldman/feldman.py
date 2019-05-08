@@ -34,11 +34,11 @@ def discardInvalidShares(shares, A, p):
         #Calculate res for this share
         res = 1
         for i in range(0,len(A)):
-            res *= A[i]**(share[0]**i) % p
+            res *= modExp(A[i],share[0]**i,p)
         res %= p
 
         #Calculate res2
-        res2 = (g**share[1]) % p
+        res2 = modExp(g,share[1], p)
 
         #Should be equal for valid share
         if res == res2:
@@ -57,6 +57,7 @@ def getSecretKey(shares, q):
             if (k!=j):
                 b[j] *= shares[k][0]*inverse(shares[k][0]-shares[j][0],q)
                 b[j] = b[j] % q
+            b[j] = b[j] % q
     K = 0
     for j in range(0,len(shares)):
         K += b[j]*shares[j][1] % q
@@ -85,6 +86,36 @@ def inverse(a, n):
     if t < 0:
         t = t + n
     return t
+
+'''
+From book Applied Cryptography
+See: https://en.wikipedia.org/wiki/Modular_exponentiation
+
+def modExp(base, exponent, modulus):
+
+    if modulus == 1:
+        return 0
+
+    result = 1
+    base = base % modulus
+    while exponent > 0:
+        if (exponent % 2 == 1):
+            result = (result * base) % modulus
+        exponent = exponent >> 1
+        base = (base * base) % modulus
+    return result
+'''
+
+def modExp(base, exponent, modulus):
+    b = '{:b}'.format(exponent)
+    out = 1
+
+    for i in range(len(b)):
+        out = out * out % modulus
+        if b[i] == '1':
+            out = out * base % modulus
+
+    return out
 
 
 #If this is the main script
