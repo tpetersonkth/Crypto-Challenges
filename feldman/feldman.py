@@ -49,18 +49,30 @@ def discardInvalidShares(shares, A, p):
 #Get secret key using formula derived from lagrange interpolation formula for polynomials
 #See: Course litterature page 484
 def getSecretKey(shares, q):
+    t = len(shares)
 
-    #Compute all b:s
-    b = [1 for s in shares]
-    for j in range(0,len(shares)):
-        for k in range(0,len(shares)):
-            if (k!=j):
-                b[j] *= shares[k][0]*inverse(shares[k][0]-shares[j][0],q)
-                b[j] = b[j] % q
-            b[j] = b[j] % q
     K = 0
-    for j in range(0,len(shares)):
-        K += b[j]*shares[j][1] % q
+    for j in range(0,t):
+        b = 1
+        for k in range(0,t):
+            if (k!=j):
+                sub = shares[k][0]-shares[j][0]
+                inv = inverse(sub,q)
+                #Assert that inverse is correct
+                test = inv*sub % q;
+                #print(str(sub)+"*"+str(inv)+"="+str(test)+" mod "+str(q))
+                if (test != 1):
+                    #Bad inverse, exit
+                    print("bad inverse")
+                    sys.exit(1)
+
+
+                b = b * shares[k][0]*inv
+                b = b % q
+
+            b = b % q
+
+        K += b*shares[j][1] % q
 
     return int(K%q)
 
@@ -73,6 +85,11 @@ Uses the Extended euclidean algorithm
 See: https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 '''
 def inverse(a, n):
+    #Ensure that a is positive
+    a = a %n
+    a = (a+n) % n
+
+    #Get the inverse
     t = 0
     newt = 1
     r = n
@@ -82,6 +99,7 @@ def inverse(a, n):
         (t, newt) = (newt, t - quotient * newt)
         (r, newr) = (newr, r - quotient * newr)
     if r > 1:
+        print("Warning -1")
         return -1
     if t < 0:
         t = t + n
