@@ -1,5 +1,11 @@
 import sys
 
+'''
+Extracts the variables required to retrieve a secret key from a set of shares
+Params:
+    Line - a line containing all the variables values
+Returns: (p,g,d,A,k,s),a tuple of the parsed variables
+'''
 def lineToVars(line):
     line = line.split()
 
@@ -23,9 +29,15 @@ def lineToVars(line):
 
     return (p,g,d,A,k,s)
 
-#Check that the shares are actually valid shares
-#(I discovered that apparently some of the provided shares aren't valid..)
-#Check that res1 = product_{\forall i}(g^a_i^{x^i}) = g^a(x) mod p = res2
+'''
+Check that the shares are actually valid shares
+Params: 
+    shares - THe set o shares to check
+    A - The set of valuese g^{a_i} for all 0 <= i <= d
+    p - The modulus of the group Z_{p}^*
+Returns: The subset of shares only containing valid shares
+The check is done by checking that res1 = product_{\forall i}(g^a_i^{x^i}) = g^a(x) mod p = res2 (Latex math notation)
+'''
 def discardInvalidShares(shares, A, p):
     s = []
 
@@ -40,14 +52,21 @@ def discardInvalidShares(shares, A, p):
         #Calculate res2
         res2 = modExp(g,share[1], p)
 
-        #Should be equal for valid share
+        #Ensure that these are equal
         if res == res2:
             s.append(share)
 
     return s
 
-#Get secret key using formula derived from lagrange interpolation formula for polynomials
-#See: Course litterature page 484
+'''
+Extracts the secret key from a set of shares
+Params:
+    shares - The set of shares
+    q - The modulus of the group G_q
+Returns: The secret key K
+The secret key is extracted from the shares using a formula derived from lagrange interpolation formula for polynomials
+See: Course litterature page 484
+'''
 def getSecretKey(shares, q):
     t = len(shares)
 
@@ -58,41 +77,31 @@ def getSecretKey(shares, q):
             if (k!=j):
                 sub = shares[k][0]-shares[j][0]
                 inv = inverse(sub,q)
-                #Assert that inverse is correct
-                test = inv*sub % q;
-                #print(str(sub)+"*"+str(inv)+"="+str(test)+" mod "+str(q))
-                if (test != 1):
-                    #Bad inverse, exit
-                    print("bad inverse")
-                    sys.exit(1)
-
 
                 b = b * shares[k][0]*inv
                 b = b % q
-
-            b = b % q
 
         K += b*shares[j][1] % q
 
     return int(K%q)
 
-''' Calculates the multiplicative inverse of a number a modulo m using the extended euclidean algorithm
+''' 
+Calculates the multiplicative inverse of a number a modulo m using the extended euclidean algorithm
  * Params:
- *  a - The number
- *  n - The modulo
+ *  a - The number whose inverse is desired
+ *  m - The modulo
  * Returns: The multiplicative inverse of a modulo m if exists, otherwise -1
 Uses the Extended euclidean algorithm
 See: https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 '''
-def inverse(a, n):
-    #Ensure that a is positive
-    a = a %n
-    a = (a+n) % n
+def inverse(a, m):
+    #Ensure that 0 <= a < n
+    a = a %m
 
-    #Get the inverse
+    #Calculate the inverse of a mod m
     t = 0
     newt = 1
-    r = n
+    r = m
     newr = a
     while newr != 0:
         quotient = int(r / newr)
@@ -102,13 +111,20 @@ def inverse(a, n):
         print("Warning -1")
         return -1
     if t < 0:
-        t = t + n
+        t = t + m
     return t
 
 '''
-From book Applied Cryptography
-See: https://en.wikipedia.org/wiki/Modular_exponentiation
+Caluclates base^exponent mod modulus
+Params:
+    base - The base of the expression
+    exponent - The exponent of the expression
+    modulus - The modulus of the expression
+Returns: base^exponent mod modulus
 
+From the book 'Applied Cryptography' by Bruce Schneier
+See: https://en.wikipedia.org/wiki/Modular_exponentiation
+'''
 def modExp(base, exponent, modulus):
 
     if modulus == 1:
@@ -121,26 +137,19 @@ def modExp(base, exponent, modulus):
             result = (result * base) % modulus
         exponent = exponent >> 1
         base = (base * base) % modulus
+
     return result
-'''
-
-def modExp(base, exponent, modulus):
-    b = '{:b}'.format(exponent)
-    out = 1
-
-    for i in range(len(b)):
-        out = out * out % modulus
-        if b[i] == '1':
-            out = out * base % modulus
-
-    return out
-
 
 #If this is the main script
 if __name__ == "__main__":
     for line in sys.stdin:
+        #Get all variables from the current input line
         (p,g,d,A,k,s) = lineToVars(line)
         q = (p-1)/2
+
+        #Filter out invalid shares
         s = discardInvalidShares(s, A, p)
+
+        #Calculate and output the secret key using the valid shares
         K = getSecretKey(s,q)
         print(K)
