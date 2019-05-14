@@ -8,7 +8,8 @@
 // https://en.wikipedia.org/wiki/Rijndael_S-box
 // https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
 // https://en.wikipedia.org/wiki/Rijndael_key_schedule
-//Testing: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf
+//
+// Testing information from NIST: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf
 
 #include <iostream>
 #include <iomanip>
@@ -87,7 +88,7 @@ int main(){
 //-----Encryption functions-----
 
 /*
- * encrypts a block of data using a set of round keys
+ * Encrypts a block of data using a set of round keys
  * Params:
  *  in - The block to encrypt
  *  out - The output location for the encrypted block
