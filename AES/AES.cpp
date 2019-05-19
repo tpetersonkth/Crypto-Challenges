@@ -73,9 +73,12 @@ int main(){
       }
     }
   }
+
+  //Expand the key
   uint32_t keys[Nb*(Nr+1)];
   keyExpansion(key,keys);
 
+  //Calculate the output for each block
   for(int b = 0; b < blocklist.size(); b++){
     uint8_t out[4*Nb];
     cipher(blocklist[b], out, keys);
@@ -105,42 +108,18 @@ void cipher(BLOCK in, uint8_t out[4*Nb], uint32_t word[Nb*(Nr+1)]){
     }
   }
 
-  //cout << "Addroundkey:" << endl;
   addRoundKey(word,state);
-  //printState(state);
 
   for(int round = 1; round < Nr; round++){
-    //cout << "round " << dec << round << ", FIGHT!" << endl;
-    //cout << "subBytes:" << endl;
     subBytes(state);
-    //printState(state);
-
-    //cout << "shiftRows:" << endl;
     shiftRows(state);
-    //printState(state);
-
-    //cout << "mixColumns:" << endl;
     mixColumns(state);
-    //printState(state);
-
-    //cout << "Addroundkey:" << endl;
     addRoundKey(word+Nb*round,state);
-    //printState(state);
   }
 
-  //cout << "subBytes:" << endl;
   subBytes(state);
-  //printState(state);
-
-  //cout << "shiftRows:" << endl;
   shiftRows(state);
-  //printState(state);
-
-  //cout << "Addroundkey:" << endl;
   addRoundKey(word+Nb*Nr,state);
-  //printState(state);
-
-
 
   //Extract state into out
   for(int r = 0; r < STATE_DIM; r++){
